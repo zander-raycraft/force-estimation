@@ -1,5 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import tkinter as tk
 
 '''
     @PARAMS:
@@ -38,8 +40,6 @@ n_steps = int(T / dt)
     @params: none
     @returns: none
 '''
-
-
 def key_press(event):
     global theta
     new_theta = theta.copy()
@@ -59,15 +59,12 @@ def key_press(event):
         theta[:] = new_theta
     update_robot()
 
-
 '''
     @update_robot: updates the position of the links in the simulation
 
     @params: none
     @returns: none
 '''
-
-
 def update_robot():
     global theta, theta_history
 
@@ -83,12 +80,52 @@ def update_robot():
     ax.set_xlim(-2, 2)
     ax.set_ylim(-2, 2)
     ax.set_aspect('equal')
-    plt.draw()
+    canvas.draw()
 
+    # Update joint angle labels
+    joint1_var.set(f"Joint 1: {np.degrees(theta[0]):.2f}°")
+    joint2_var.set(f"Joint 2: {np.degrees(theta[1]):.2f}°")
 
-# Initialize the plot
+'''
+    @make_tkinter: Creates the tkinter window for modeling 2dof robot and information
+    
+    @params: none
+    @return: none
+'''
+def make_tkinter():
+    # window creation
+    global root, frame, canvas, fig, ax, joint1_var, joint2_var
+    root = tk.Tk()
+    root.title("2Dof Arm")
+
+    # frame creation
+    frame = tk.Frame(root)
+    frame.grid(row=0, column=0, columnspan=2, sticky="nsew")
+    fig, ax = plt.subplots()
+
+    # canvas creation
+    canvas = FigureCanvasTkAgg(fig, master=frame)
+    canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+    fig.canvas.mpl_connect('key_press_event', key_press)
+
+    # label creation
+    joint1_var = tk.StringVar()
+    joint2_var = tk.StringVar()
+    joint1_label = tk.Label(root, textvariable=joint1_var)
+    joint2_label = tk.Label(root, textvariable=joint2_var)
+    joint1_label.grid(row=1, column=0, padx=10, pady=5)
+    joint2_label.grid(row=1, column=1, padx=10, pady=5)
+    root.grid_rowconfigure(0, weight=1)
+    root.grid_columnconfigure(0, weight=1)
+    root.grid_columnconfigure(1, weight=1)
+
 theta_history = []
-fig, ax = plt.subplots()
-fig.canvas.mpl_connect('key_press_event', key_press)
-update_robot()
-plt.show()
+def main():
+    make_tkinter()
+    update_robot()
+    root.mainloop()
+
+
+if __name__ == "__main__":
+    main()
+
