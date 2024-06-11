@@ -58,9 +58,3 @@ def generate_SS(link_length, link_mass):
 '''
 def update_SS(state, stateMatrix, inputMatrix, t):
     return (stateMatrix @ state + inputMatrix @ t)
-
-# model = generate_SS([1, 1], [1, 1])
-# print(f"State Matrix: \n{model[0]}\n")
-# print(f"Input Matrix: \n{model[1]}\n")
-# print(f"Output Matrix: \n{model[2]}\n")
-# print(f"Feedthrough Matrix: \n{model[3]}\n")
