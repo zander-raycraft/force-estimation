@@ -5,6 +5,7 @@ import tkinter as tk
 from state_space_2DOF import *
 from luenberger_2DOF import *
 
+
 '''
     @GLOBAL PARAMS:
         Link length (m) - lLength
@@ -26,6 +27,7 @@ Q = np.eye(stateMatrix.shape[0]) * 0.1  # Process noise covariance matrix
 R = np.eye(outputMatrix.shape[0]) * 0.1
 stop_simulation = False
 
+
 '''
     @Initial Setup:
         initial angles (rad) - theta
@@ -43,18 +45,18 @@ T = 10.0
 n_steps = int(T / dt)
 state = np.hstack((theta, dtheta))
 state_estimate = np.copy(state)
+previous_state_estimate = None
 u = np.zeros(len(lLengths))
-stop_simulation = False
+
+
 '''
     @key_press: converts keyboard input into movements for 2d arm
 
     @params: none
     @returns: none
 '''
-
-
 def key_press(event):
-    global state, theta, dtheta, u, state_estimate
+    global state, theta, dtheta, u, state_estimate, previous_state_estimate
     new_theta = theta.copy()
     increment = 0.05
     key_map = {'left': 0, 'right': 0, 'a': 1, 'd': 1}
@@ -73,8 +75,8 @@ def key_press(event):
             state = np.hstack((theta, dtheta))
             state = update_SS(state, stateMatrix, inputMatrix, dtheta, dt)
             y = outputMatrix @ state
-            state_estimate = update_observer(state_estimate, stateMatrix, inputMatrix, outputMatrix, observer_gain, u,
-                                             y, dt)
+            previous_state_estimate = np.copy(state_estimate)  # Store the previous state estimate
+            state_estimate = update_observer(state_estimate, stateMatrix, inputMatrix, outputMatrix, observer_gain, u, y, dt)
             update_robot(state, state_estimate)
 
 '''
@@ -93,7 +95,7 @@ def stop_simulation(event):
     @returns: none
 '''
 def update_robot(state, state_estimate):
-    global theta, theta_history
+    global theta, theta_history, previous_state_estimate, difference_var
     theta = state[:2]
     theta_history.append(np.copy(theta))
     ax.clear()
@@ -108,16 +110,22 @@ def update_robot(state, state_estimate):
     ax.set_aspect('equal')
     canvas.draw()
 
+    # Calculate and display the difference between predicted and actual state
+    if previous_state_estimate is not None:
+        difference = state - previous_state_estimate
+    else:
+        difference = np.zeros_like(state)
+
     # Update info window
     joint_vars = [joint1_var, joint2_var]
     for i, var in enumerate(joint_vars):
         var.set(f"Joint {i + 1}: {np.degrees(theta[i]):.5f}°")
-    state_str = np.array2string(state, formatter={'float_kind': lambda x: "%.5f" % x}, separator=',',
-                                suppress_small=True)
+    state_str = np.array2string(state, formatter={'float_kind': lambda x: "%.5f" % x}, separator=',', suppress_small=True)
     state_var.set(f"State: {state_str}")
-    state_estimate_str = np.array2string(state_estimate, formatter={'float_kind': lambda x: "%.5f" % x}, separator=',',
-                                         suppress_small=True)
+    state_estimate_str = np.array2string(state_estimate, formatter={'float_kind': lambda x: "%.5f" % x}, separator=',', suppress_small=True)
     state_estimate_var.set(f"Estimated State: {state_estimate_str}")
+    difference_str = np.array2string(difference, formatter={'float_kind': lambda x: "%.5f" % x}, separator=',', suppress_small=True)
+    difference_var.set(f"Difference: {difference_str}")
     state_matrix_var.set(f"stateMatrix: {np.array2string(stateMatrix, precision=2, separator=',')}")
     input_matrix_var.set(f"inputMatrix: {np.array2string(inputMatrix, precision=2, separator=',')}")
     output_matrix_var.set(f"outputMatrix: {np.array2string(outputMatrix, precision=2, separator=',')}")
@@ -129,14 +137,15 @@ def update_robot(state, state_estimate):
 '''
 def create_info():
     info_window = tk.Toplevel(root)
-    info_window.title("2DoF Arm - force estimation")
+    info_window.title("2DoF Arm - Force Estimation")
 
     # Create vars
-    global joint1_var, joint2_var, state_var, state_estimate_var, state_matrix_var, input_matrix_var, output_matrix_var, feedthrough_matrix_var
+    global joint1_var, joint2_var, state_var, state_estimate_var, difference_var, state_matrix_var, input_matrix_var, output_matrix_var, feedthrough_matrix_var
     joint1_var = tk.StringVar()
     joint2_var = tk.StringVar()
     state_var = tk.StringVar()
     state_estimate_var = tk.StringVar()
+    difference_var = tk.StringVar()
     state_matrix_var = tk.StringVar()
     input_matrix_var = tk.StringVar()
     output_matrix_var = tk.StringVar()
@@ -152,15 +161,17 @@ def create_info():
     output_matrix_label.grid(row=0, column=2, padx=10, pady=5)
     feedthrough_matrix_label.grid(row=0, column=3, padx=10, pady=5)
 
-    # Create labels for joint angles and state
+    # Create labels for joint angles, state, state estimate, and difference
     joint1_label = tk.Label(info_window, textvariable=joint1_var)
     joint2_label = tk.Label(info_window, textvariable=joint2_var)
     state_label = tk.Label(info_window, textvariable=state_var)
     state_estimate_label = tk.Label(info_window, textvariable=state_estimate_var)
+    difference_label = tk.Label(info_window, textvariable=difference_var)
     joint1_label.grid(row=1, column=0, padx=10, pady=5)
     joint2_label.grid(row=1, column=1, padx=10, pady=5)
     state_label.grid(row=1, column=2, padx=10, pady=5)
     state_estimate_label.grid(row=1, column=3, padx=10, pady=5)
+    difference_label.grid(row=1, column=4, padx=10, pady=5)
 
 
 '''
