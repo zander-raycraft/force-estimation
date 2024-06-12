@@ -13,10 +13,11 @@ from scipy.linalg import solve_continuous_are
     @return: gainMatrix (np.array): observer gain matrix
 '''
 def calculate_observer_gain(A, C, Q, R):
-
+    # data validation of typing:
+    A, C, Q, R = map(np.array, (A, C, Q, R))
     # Using Riccati equation (ARE)
     P = solve_continuous_are(A.T, C.T, Q, R)
-    gainMatrix = P @ C.T @ np.linalg.inv(R)
+    gainMatrix = np.linalg.inv(R) @ C @ P
     return gainMatrix
 
 '''
@@ -34,6 +35,6 @@ def calculate_observer_gain(A, C, Q, R):
 '''
 def update_observer(state_estimate, A, B, C, gain, u, y, dt):
     y_estimate = C @ state_estimate
-    x_dot_estimate = (A @ state_estimate) + (B @ u) + L @ (y - y_estimate)
+    x_dot_estimate = (A @ state_estimate) + (B @ u) + gain @ (y - y_estimate)
     new_state_estimate = state_estimate + dt * x_dot_estimate
     return new_state_estimate
