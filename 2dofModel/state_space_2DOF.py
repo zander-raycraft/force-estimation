@@ -3,6 +3,19 @@ import numpy as np
 #GLOBAL
 grav = 9.81
 
+# GLOBAL NOTES
+'''
+    INPUT MATRIX = how input torques affect angular acceleration
+    OUTPUT MATRIX = Represents which states are observed, in this case is identity
+                    matrix because we are observing all joints
+    EULER-LAGRANGE DERIVATION
+        1) T = [(1/2)m1v^2 + (1/2)I1dtheta1^2] + [(1/2)m1v^2 + (1/2)I1dtheta2^2]
+        2) V = m1ghc1 + m2ghc2
+        3) L = T - V
+        
+        ... move to Euler Lagrange motion
+'''
+
 '''
     @generate_SS: generates the state space model for the robotic arm
 
@@ -13,31 +26,25 @@ grav = 9.81
                         matrix
 '''
 def generate_SS(link_length, link_mass):
-    
-    #make robot params
     linkNum = len(link_length)
     link_lengths = np.array(link_length)
     link_masses = np.array(link_mass)
-    cMass = link_lengths / 2 # comeback to fix
-    inertia = np.array((1/3) * link_masses * link_lengths ** 2)
+    cMass = link_lengths / 2  # center of mass for each link
+    inertia = np.array((1/3) * link_masses * link_lengths ** 2)  # moment of inertia for each link
 
-    #State space matricies
-    stateMatrix = np.zeros((2*linkNum, 2*linkNum))
-    inputMatrix = np.zeros((2*linkNum, linkNum))
-    outputMatrix = np.eye(2*linkNum)
-    feedthroughMatrix = np.zeros((2*linkNum, linkNum))
+    # State space matrices
+    stateMatrix = np.zeros((2 * linkNum, 2 * linkNum))
+    inputMatrix = np.zeros((2 * linkNum, linkNum))
+    outputMatrix = np.eye(2 * linkNum)
+    feedthroughMatrix = np.zeros((2 * linkNum, linkNum))
 
     for i in range(linkNum):
-        # Define state dynamics elements
         if i < linkNum - 1:
             stateMatrix[2 * i, 2 * i + 1] = 1
-            stateMatrix[2 * i + 1, 2 * i + 2] = (-link_masses[i + 1] * grav * cMass[i + 1]
-                                                 / (inertia[i] + inertia[i + 1]))
+            stateMatrix[2 * i + 1, 2 * i + 2] = (-link_masses[i + 1] * grav * cMass[i + 1] / (inertia[i] + inertia[i + 1]))
             stateMatrix[2 * i + 2, 2 * i + 3] = 1
-            stateMatrix[2 * i + 3, 2 * i] = ((link_masses[i] + link_masses[i + 1]) *
-                                             grav * cMass[i] / (inertia[i] + inertia[i + 1]))
+            stateMatrix[2 * i + 3, 2 * i] = ((link_masses[i] + link_masses[i + 1]) * grav * cMass[i] / (inertia[i] + inertia[i + 1]))
 
-        # Define B matrix elements for control inputs
         inputMatrix[2 * i + 1, i] = 1 / inertia[i]
         if i < linkNum - 1:
             inputMatrix[2 * i + 3, i + 1] = 1 / inertia[i + 1]
@@ -55,6 +62,7 @@ def generate_SS(link_length, link_mass):
     @returns: updateState -> updates state vector
     
     xDot = Ax + Bt
+    y = Cx + Du - "output vector"
     state_new = A.dot(x) + b.dot(dtheta)
 '''
 def update_SS(state, stateMatrix, inputMatrix, t, dt):
