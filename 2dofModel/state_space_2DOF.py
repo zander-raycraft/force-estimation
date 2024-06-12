@@ -18,8 +18,8 @@ def generate_SS(link_length, link_mass):
     linkNum = len(link_length)
     link_lengths = np.array(link_length)
     link_masses = np.array(link_mass)
-    cMass = link_lengths / 2
-    intertiaMoment = (1/3) * link_masses * link_lengths ** 2
+    cMass = link_lengths / 2 # comeback to fix
+    inertia = np.array((1/3) * link_masses * link_lengths ** 2)
 
     #State space matricies
     stateMatrix = np.zeros((2*linkNum, 2*linkNum))
@@ -28,22 +28,20 @@ def generate_SS(link_length, link_mass):
     feedthroughMatrix = np.zeros((2*linkNum, linkNum))
 
     for i in range(linkNum):
+        # Define state dynamics elements
         if i < linkNum - 1:
-            # defnination for state dynamics elements
-            stateMatrix[2*i, 2*i+1] = 1
-            stateMatrix[2*i+1, 2*i+2] = (-link_masses[i+1] * grav * link_lengths[i+1] 
-                                         / (link_masses[i] * link_lengths[i]**2 + link_masses[i+1] 
-                                            * link_lengths[i+1]**2))
-            stateMatrix[2*i+2, 2*i+3] = 1
-            stateMatrix[2*i+3, 2*i] = ((link_masses[i] + link_masses[i+1]) * 
-                                       grav * link_lengths[i] / (link_masses[i] * link_lengths[i]**2 
-                                       + link_masses[i+1] * link_lengths[i+1]**2))
+            stateMatrix[2 * i, 2 * i + 1] = 1
+            stateMatrix[2 * i + 1, 2 * i + 2] = (-link_masses[i + 1] * grav * cMass[i + 1]
+                                                 / (inertia[i] + inertia[i + 1]))
+            stateMatrix[2 * i + 2, 2 * i + 3] = 1
+            stateMatrix[2 * i + 3, 2 * i] = ((link_masses[i] + link_masses[i + 1]) *
+                                             grav * cMass[i] / (inertia[i] + inertia[i + 1]))
 
         # Define B matrix elements for control inputs
-        inputMatrix[2*i+1, i] = 1 / (link_masses[i] * link_lengths[i]**2)
+        inputMatrix[2 * i + 1, i] = 1 / inertia[i]
         if i < linkNum - 1:
-            inputMatrix[2*i+3, i+1] = 1 / (link_masses[i+1] * link_lengths[i+1]**2)
-    
+            inputMatrix[2 * i + 3, i + 1] = 1 / inertia[i + 1]
+
     return [stateMatrix, inputMatrix, outputMatrix, feedthroughMatrix]
 
 '''
@@ -55,6 +53,10 @@ def generate_SS(link_length, link_mass):
     @params: t -> input vector/torques
 
     @returns: updateState -> updates state vector
+    
+    xDot = Ax + Bt
+    state_new = A.dot(x) + b.dot(dtheta)
 '''
-def update_SS(state, stateMatrix, inputMatrix, t):
-    return (stateMatrix @ state + inputMatrix @ t)
+def update_SS(state, stateMatrix, inputMatrix, t, dt):
+    x_dot = stateMatrix @ state + inputMatrix @ t
+    return state + dt * x_dot

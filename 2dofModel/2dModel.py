@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import tkinter as tk
 from state_space_2DOF import *
+from luenberger_2DOF import *
 
 '''
     @GLOBAL PARAMS:
@@ -16,7 +17,7 @@ lLengths = [1.0, 1.0]
 lMass = [1.0, 1.0]
 grav = 9.81
 cMass = [lLengths[0]/2, lLengths[1]/2]
-inertia = [((1/3) * lMass[0] * lLengths[0] ** 2), ((1/3) * lMass[1] * lLengths[1] ** 2)]
+inertia = [(1 / 3) * mass * length ** 2 for mass, length in zip(lMass, lLengths)]
 (stateMatrix, inputMatrix,
     outputMatrix, feedthroughMatrix) = generate_SS(lLengths, lMass)
 
@@ -59,7 +60,8 @@ def key_press(event):
     link2_y = link1_y + lLengths[1] * np.sin(new_theta[0] + new_theta[1])
     if link1_y >= 0 and link2_y >= 0:
         theta[:] = new_theta
-        state = update_SS(state, stateMatrix, inputMatrix, dtheta)
+        state = np.hstack((theta, dtheta))
+        state = update_SS(state, stateMatrix, inputMatrix, dtheta, dt)
 
     update_robot()
 
@@ -85,9 +87,12 @@ def update_robot():
     canvas.draw()
 
     # Update info window
-    joint1_var.set(f"Joint 1: {np.degrees(theta[0]):.2f}°")
-    joint2_var.set(f"Joint 2: {np.degrees(theta[1]):.2f}°")
-    state_var.set(f"State: {state}")
+    joint_vars = [joint1_var, joint2_var]
+    for i, var in enumerate(joint_vars):
+        var.set(f"Joint {i + 1}: {np.degrees(theta[i]):.5f}°")
+    state_str = np.array2string(state, formatter={'float_kind': lambda x: "%.5f" % x}, separator=',',
+                                suppress_small=True)
+    state_var.set(f"State: {state_str}")
     state_matrix_var.set(f"stateMatrix: {np.array2string(stateMatrix, precision=2, separator=',')}")
     input_matrix_var.set(f"inputMatrix: {np.array2string(inputMatrix, precision=2, separator=',')}")
     output_matrix_var.set(f"outputMatrix: {np.array2string(outputMatrix, precision=2, separator=',')}")
