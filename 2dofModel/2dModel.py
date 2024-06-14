@@ -5,6 +5,10 @@ import tkinter as tk
 from state_space_2DOF import *
 from luenberger_2DOF import *
 
+#ISSUES:
+'''
+    1) Fix issue with control: the first link moves slightly when the top link moves but not vice versa
+'''
 
 '''
     @GLOBAL PARAMS:
