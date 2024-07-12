@@ -3,7 +3,7 @@
     <option timestep="0.002" />
     <default>
         <joint damping="1.0" limited="true" range="-180 180" />
-        <geom friction="0.8" />
+        <geom friction="0.8" contype="1" conaffinity="1" />
     </default>
 
     <asset>
@@ -13,19 +13,21 @@
     <worldbody>
         <light pos="0 1 1" dir="0 -1 -1" diffuse="1 1 1" />
 
-        <!-- Base -->
         <body name="base" pos="0 0 0">
-            <!-- Link 1 -->
             <body name="link1" pos="0 0 0">
                 <joint name="joint1" type="hinge" axis="0 0 1" />
-                <geom name="link1_geom" type="capsule" fromto="0 0 0 1 0 0" size="0.05" rgba="1 0 0 1" />
-                
-                <!-- Link 2 -->
+                <geom name="link1_geom" type="capsule" fromto="0 0 0 1 0 0" size="0.05" rgba="1 0 0 1" contype="1" conaffinity="1" />
                 <body name="link2" pos="1 0 0">
                     <joint name="joint2" type="hinge" axis="0 0 1" pos="0 0 0" />
-                    <geom name="link2_geom" type="capsule" fromto="0 0 0 1 0 0" size="0.05" rgba="0 0 1 1" />
+                    <geom name="link2_geom" type="capsule" fromto="0 0 0 1 0 0" size="0.05" rgba="0 0 1 1" contype="1" conaffinity="1" />
+                    <site name="end_effector" pos="1 0 0" size="0.01" type="sphere" rgba="0 0 0 0" />
                 </body>
             </body>
+        </body>
+
+        <!-- Stationary object placed out of the initial reach of the robot arm -->
+        <body name="stationary_object" pos="2 0 0">
+            <geom name="stationary_geom" type="box" size="0.1 0.1 0.1" rgba="0 1 0 1" contype="1" conaffinity="1" />
         </body>
     </worldbody>
 
@@ -33,4 +35,8 @@
         <motor joint="joint1" ctrlrange="-1 1" ctrllimited="true" />
         <motor joint="joint2" ctrlrange="-1 1" ctrllimited="true" />
     </actuator>
+
+    <sensor>
+        <force name="force_sensor" site="end_effector" />
+    </sensor>
 </mujoco>
