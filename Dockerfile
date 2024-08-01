@@ -29,4 +29,4 @@ WORKDIR /app
 RUN pip3 install mujoco-py
 
 #EXECUTION COMMAND
-CMD ["python3", "your_script.py"]
+CMD ["python3", "mujoco.py"]
